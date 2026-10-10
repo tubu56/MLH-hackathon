@@ -1,17 +1,10 @@
-"""Streamlit dashboard for disaster EDA, ensemble predictions and Gemma explanations.
-
-Needs integrating_gemma.py in the same folder (models, predict() and Gemma helpers).
-
-    pip install streamlit pandas
-    streamlit run app.py
-"""
+import datetime
 import pandas as pd
 import streamlit as st
+import requests
 
 import integrating_gemma as core
 
-
-# ---------------------------------------------------------------- constants
 MODEL_LABELS = {"knn": "K-Nearest Neighbors", "rf": "Random Forest", "lr": "Logistic Regression"}
 
 ICONS = {"Earthquake": "🌋", "Flood": "🌊", "Cyclone": "🌀", "Wildfire": "🔥",
@@ -36,25 +29,24 @@ FEATURE_GROUPS = {
                                 "firestation_count_25km"],
 }
 
-# Slider ranges: feature -> (min, max, step). Features not listed use a number box.
 SLIDER_RANGES = {
     "temperature_c": (-30.0, 50.0, 0.5),
     "temp_anomaly_c": (-5.0, 8.0, 0.1),
     "humidity_pct": (0.0, 100.0, 1.0),
-    "pressure_hpa": (950.0, 1050.0, 1.0),
+    "pressure_hpa": (500.0, 1050.0, 1.0),
     "wind_speed_ms": (0.0, 60.0, 0.5),
     "sea_surface_temp_c": (10.0, 33.0, 0.5),
-    "rainfall_24h_mm": (0.0, 300.0, 1.0),
+    "rainfall_24h_mm": (0.0, 500.0, 1.0),
     "rainfall_7d_mm": (0.0, 600.0, 1.0),
     "rainfall_30d_mm": (0.0, 1000.0, 5.0),
     "rainfall_90d_mm": (0.0, 2000.0, 10.0),
-    "soil_moisture": (0.0, 0.6, 0.01),
+    "soil_moisture": (0.0, 1.0, 0.01),
     "spei_drought_index": (-3.0, 3.0, 0.1),
     "ndvi": (0.0, 0.95, 0.01),
     "fire_danger_index": (0.0, 100.0, 1.0),
     "latitude": (-60.0, 70.0, 0.1),
     "longitude": (-180.0, 180.0, 0.1),
-    "elevation_m": (0.0, 5000.0, 10.0),
+    "elevation_m": (0.0, 8000.0, 10.0),
     "slope_deg": (0.0, 60.0, 0.5),
     "dist_to_coast_km": (0.0, 1500.0, 5.0),
     "dist_to_river_km": (0.0, 100.0, 0.5),
@@ -98,34 +90,55 @@ PRESETS = {
 DEFAULT_DESCRIPTION = ("Heavy rain for 3 days, about 250 mm, steep 35 degree hillside, "
                        "humidity 90%, river nearby.")
 
-
-# ---------------------------------------------------------------- helpers
 def display_name(feature):
     return feature.replace("_", " ").capitalize()
 
-
 def dataset_unavailable():
     st.error(f"Dataset unavailable. Expected to find it at `{core.DATASET_PATH}`.")
-
 
 def is_integer_feature(feature):
     return (feature in core.TRAINING_DATA
             and pd.api.types.is_integer_dtype(core.TRAINING_DATA[feature].dtype))
 
-
 @st.cache_resource
 def warm_gemma(model_tag):
-    """Load the Gemma model once per tag so the first explanation is fast."""
     if hasattr(core, "warm_up"):
         core.warm_up()
     return True
 
+def fetch_live_weather(location_name):
+    try:
+        geo_res = requests.get(f"https://geocoding-api.open-meteo.com/v1/search?name={location_name}&count=1", timeout=5).json()
+        if "results" not in geo_res or len(geo_res["results"]) == 0:
+            return None, "Location not found via Geocoding API."
+        
+        lat = geo_res["results"][0]["latitude"]
+        lon = geo_res["results"][0]["longitude"]
+        
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,precipitation,rain,surface_pressure,wind_speed_10m"
+        w_res = requests.get(weather_url, timeout=5).json()
+        current = w_res.get("current", {})
+        
+        now = datetime.datetime.now()
+        
+        return {
+            "temperature_c": float(current.get("temperature_2m", 20.0)),
+            "humidity_pct": float(current.get("relative_humidity_2m", 70.0)),
+            "rainfall_24h_mm": float(current.get("precipitation", 0.0) or current.get("rain", 0.0)) * 24,
+            "pressure_hpa": float(current.get("surface_pressure", 1013.0)),
+            "wind_speed_ms": float(current.get("wind_speed_10m", 3.0)),
+            "latitude": float(lat),
+            "longitude": float(lon),
+            "year": int(now.year),
+            "month": int(now.month),
+            "day_of_year": int(now.timetuple().tm_yday)
+        }, None
+    except Exception as e:
+        return None, str(e)
 
-# ---------------------------------------------------------------- dashboard
 def render_dashboard(dataset):
     st.title("Disaster prediction dashboard")
-    st.caption("Explore the training data, review model performance, "
-               "or submit local conditions for an ensemble prediction.")
+    st.caption("Explore the training data, review model performance, or submit local conditions for an ensemble prediction.")
 
     if dataset.empty:
         dataset_unavailable()
@@ -151,11 +164,8 @@ def render_dashboard(dataset):
             "2. Compare classifier metrics in **Models**.\n"
             "3. Describe or enter conditions in **Form** to receive the ensemble result."
         )
-        st.info("This tool is for decision support only. "
-                "Always follow official disaster-agency guidance.")
+        st.info("This tool is for decision support only. Always follow official disaster-agency guidance.")
 
-
-# ---------------------------------------------------------------- EDA
 def render_eda(dataset):
     st.title("Exploratory data analysis")
     st.caption("Summary of the cleaned historical dataset used to prepare the prediction features.")
@@ -201,12 +211,9 @@ def render_eda(dataset):
             st.dataframe(missing_rows.to_frame(), width="stretch")
         st.dataframe(dataset.describe(include="all").transpose(), width="stretch")
 
-
-# ---------------------------------------------------------------- models
 def render_models():
     st.title("Model performance")
-    st.caption("Saved validation metrics for each classifier. The final prediction "
-               "combines available models using the configured ensemble weights.")
+    st.caption("Saved validation metrics for each classifier. The final prediction combines available models using the configured ensemble weights.")
 
     metric_rows = []
     for name in core.MODELS:
@@ -235,13 +242,9 @@ def render_models():
         for name in core.MODELS
     ]
     st.dataframe(pd.DataFrame(weight_rows).set_index("Model"), width="stretch")
-    st.caption("Metrics describe saved validation runs and are not a guarantee "
-               "of future predictive accuracy.")
+    st.caption("Metrics describe saved validation runs and are not a guarantee of future predictive accuracy.")
 
-
-# ---------------------------------------------------------------- form inputs
 def render_feature_input(feature, preset_name, preset_values):
-    """Render one input. Sliders where a range is known, otherwise a number box."""
     label = display_name(feature)
     key = f"input_{preset_name}_{feature}"
 
@@ -266,10 +269,7 @@ def render_feature_input(feature, preset_name, preset_values):
     cast = int if is_integer_feature(feature) else float
     return st.number_input(label, value=cast(default), step=1 if cast is int else 0.1, key=key)
 
-
-# ---------------------------------------------------------------- prediction
 def run_prediction(values):
-    """Run the ensemble and store the result; clears any earlier explanation."""
     st.session_state.pop("explanation", None)
     try:
         predictions, votes = core.predict(values)
@@ -278,9 +278,7 @@ def run_prediction(values):
         st.session_state.pop("prediction_result", None)
         st.error(f"Prediction failed ({type(error).__name__}): {error}")
 
-
 def render_explanation(features, predictions, votes):
-    """Show the Gemma explanation, streaming it once and caching it afterwards."""
     st.subheader("🤖 Gemma explanation")
     cached = st.session_state.get("explanation")
     if cached:
@@ -301,7 +299,6 @@ def render_explanation(features, predictions, votes):
     except Exception as error:
         st.error(f"Gemma unavailable: {error}")
         st.info("Use 'Test Gemma connection' in the sidebar to see the exact problem.")
-
 
 def render_prediction_result(result):
     if not result:
@@ -334,8 +331,6 @@ def render_prediction_result(result):
         st.info("Gemma explanations are turned off in the sidebar.")
     st.caption("Follow official warnings from your national disaster agency.")
 
-
-# ---------------------------------------------------------------- form page
 def render_text_tab():
     description = st.text_area("Describe the conditions", DEFAULT_DESCRIPTION, height=110)
     if st.button("Predict from description", type="primary"):
@@ -345,11 +340,27 @@ def render_text_tab():
             run_prediction(extracted)
         else:
             st.session_state.pop("prediction_result", None)
-            st.warning("Couldn't extract any values. Check the Gemma connection, "
-                       "or use the 'Enter values' tab.")
-
+            st.warning("Couldn't extract any values. Check the Gemma connection, or use the 'Enter values' tab.")
 
 def render_manual_tab():
+    st.markdown("### 📡 Live Weather Auto-Sync")
+    col_w1, col_w2 = st.columns([2, 1])
+    with col_w1:
+        weather_location = st.text_input("Enter city or location for live telemetry", "Kathmandu", key="weather_location_input")
+    with col_w2:
+        st.write("")
+        st.write("")
+        if st.button("Fetch Live Weather"):
+            with st.spinner("Fetching live weather data from Open-Meteo..."):
+                w_data, err = fetch_live_weather(weather_location)
+                if w_data:
+                    for k, v in w_data.items():
+                        st.session_state[f"input_(none)_{k}"] = v
+                    st.success(f"Successfully synced live weather and date for {weather_location}!")
+                else:
+                    st.error(f"Failed to fetch weather: {err}")
+    st.divider()
+
     preset_name = st.selectbox("Load a test preset", list(PRESETS), key="preset")
     preset_values = PRESETS[preset_name]
 
@@ -361,7 +372,6 @@ def render_manual_tab():
             feature_groups[group] = available
             assigned.update(available)
 
-   
     with st.form("disaster_prediction_form"):
         values = {}
         for group, features in feature_groups.items():
@@ -370,18 +380,15 @@ def render_manual_tab():
             for index, feature in enumerate(features):
                 with (left if index % 2 == 0 else right):
                     values[feature] = render_feature_input(feature, preset_name, preset_values)
-        submitted = st.form_submit_button("Predict disaster type", type="primary", width="stretch")
+        submitted = st.form_submit_button("Predict disaster type", type="primary", use_container_width=True)
 
     if submitted:
         run_prediction(values)
 
-
 def render_form():
     st.title("Disaster prediction form")
-    st.caption("Describe the situation in words, or enter values directly. "
-               "Unset values start at the dataset median or most common category.")
-    st.info("Predictions are estimates from historical data, not official warnings "
-            "or a substitute for emergency services.")
+    st.caption("Describe the situation in words, or enter values directly. Unset values start at the dataset median or most common category.")
+    st.info("Predictions are estimates from historical data, not official warnings or a substitute for emergency services.")
 
     tab_text, tab_manual = st.tabs(["💬 Describe in words", "🎚️ Enter values"])
     with tab_text:
@@ -391,15 +398,11 @@ def render_form():
 
     render_prediction_result(st.session_state.get("prediction_result"))
 
-
-# ---------------------------------------------------------------- app shell
 def render_dashboard_page():
     render_dashboard(core.TRAINING_DATA)
 
-
 def render_eda_page():
     render_eda(core.TRAINING_DATA)
-
 
 def render_sidebar(pages):
     with st.sidebar:
@@ -430,7 +433,6 @@ def render_sidebar(pages):
 
         st.caption("Decision support only. Follow official warnings from your national disaster agency.")
 
-
 def render_app():
     st.set_page_config(page_title="Disaster Risk Explorer", page_icon="🌍", layout="wide")
     st.markdown(
@@ -452,7 +454,6 @@ def render_app():
     page = st.navigation(pages, position="hidden")
     render_sidebar(pages)
     page.run()
-
 
 if __name__ == "__main__":
     render_app()
