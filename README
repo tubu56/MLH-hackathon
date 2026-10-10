@@ -1,99 +1,90 @@
 Disaster Risk Explorer & AI Predictor
-Aarohan — Built with passion for hacktober fest🚀
 
-💡 Inspiration & The Problem
-When natural disasters strike, emergency response teams and local communities need fast, data-backed insights. However, relying on heavy cloud APIs can be slow, expensive, or prone to privacy issues.
+A machine learning dashboard and local AI prediction tool for forecasting natural disaster risks (such as earthquakes, floods, cyclones, wildfires, and landslides) using an ensemble of classifiers combined with local Gemma AI integration via Ollama.
 
-Our Solution: A lightning-fast, local-first disaster prediction platform. It combines traditional machine learning classifiers (KNN, Random Forest, Logistic Regression) with local Gemma AI (via Ollama) to predict potential disaster types (floods, cyclones, earthquakes, wildfires, etc.) and generate plain-language explanations and safety guidelines entirely offline!   
-PY
-+ 1
+Key Features
 
-✨ What Makes It Cool (Key Features)
-Interactive Streamlit Dashboard: Explore historical data patterns, view temporal trends, and check model performance metrics visually.   
-PY
+Streamlit Dashboard: Explore historical data patterns, temporal trends, and model performance metrics.
 
-Ensemble Machine Learning Core: Instead of trusting just one model, it pools predictions from K-Nearest Neighbors (KNN), Random Forest (RF), and Logistic Regression (LR) using a weighted ensemble voting system.   
-PY
-+ 1
+Ensemble Machine Learning: Combines predictions from K-Nearest Neighbors (KNN), Random Forest (RF), and Logistic Regression (LR) using a weighted voting system.
 
-Smart Gemma AI Integration:
+Local Gemma AI Integration:
 
-Text-to-Features: Type out a natural language description (e.g., "Heavy rain for 3 days, steep hillside..."), and Gemma extracts the technical features automatically.   
-PY
+Extracts feature parameters from plain-text descriptions.
 
-AI Explanations: Streams a real-time, easy-to-understand explanation of why a disaster is predicted, complete with 3 actionable precautions.   
-PY
-+ 1
+Generates real-time explanations and safety precautions based on predicted risks.
 
-Dual-Mode Operation: Use the polished web UI for presentations or the CLI terminal script for quick testing.   
-PY
-+ 1
+Dual Interface: Run predictions using the web dashboard or directly from the terminal.
 
-📂 Project Structure
-Plaintext
-├── app.py                 # Core Streamlit dashboard UI (Dashboard, EDA, Models, Forms)
-├── integrating_gemma.py   # Machine learning pipeline, ensemble logic, and Ollama/Gemma helpers
-├── streamlit_app.py       # Clean entry point to launch the Streamlit app
+Project Structure
+
+├── app.py                 # Streamlit UI dashboard logic
+├── integrating_gemma.py   # Core model execution, ensemble logic, and Ollama helpers
+├── streamlit_app.py       # Entry point to launch the Streamlit application
 ├── scaler.pkl             # Feature normalization scaler
-├── Pkl_Files/             # Pre-trained model binaries (.pkl)
-├── Scores/                # Validation accuracy and macro-F1 metrics
-└── Dataset/               # Cleaned historical disaster dataset (CSV)[cite: 2, 4]
-🛠️ Tech Stack
-Frontend/UI: Streamlit   
-PY
+├── Pkl_Files/             # Serialized trained model files
+├── Scores/                # Validation score metrics
+└── Dataset/               # Cleaned historical disaster dataset
 
-Machine Learning: Scikit-Learn (KNN, Random Forest, Logistic Regression), Joblib, Pandas, NumPy   
-PY
 
-Local LLM: Gemma (via Ollama Python client)[cite: 2]
+Tech Stack
 
-🚀 Quick Start Guide (For Judges & Evaluators)
-Follow these steps to get the project running on your local machine in under 5 minutes:
+Frontend: Streamlit
 
-1. Clone & Setup Environment
-Make sure you have Python 3.8+ installed, then install the required dependencies:
+Machine Learning: Scikit-Learn (KNN, Random Forest, Logistic Regression), Joblib, Pandas, NumPy
 
-Bash
+Local LLM: Gemma via Ollama Python client
+
+Prerequisites & Setup
+
+1. Requirements
+
+Python 3.8+
+
+Ollama (running locally)
+
+Install the Python dependencies:
+
 pip install streamlit pandas numpy joblib scikit-learn ollama
-2. Set Up Local LLM (Ollama)
-This project uses Ollama to run Gemma locally.
 
-Download and install Ollama.
 
-Pull the required model tag (default configured in code is gemma4:e4b, or match whatever model you have installed)[cite: 2]:
+2. Configure Ollama
 
-Bash
+Install and start Ollama (https://ollama.com/).
+
+Pull the required model tag (configured as gemma4:e4b in integrating_gemma.py):
+
 ollama pull gemma4:e4b
-Ensure Ollama is running in the background.
 
-3. Launch the Web Dashboard 🌟
-Run the following command in your project directory to open the interactive UI[cite: 3]:
 
-Bash
+Running the Application
+
+Web Dashboard
+
+Launch the Streamlit web application:
+
 streamlit run streamlit_app.py
-This will automatically launch a browser window with the multi-page dashboard.   
-PY
 
-4. Alternative: Run via Terminal Mode
-If you want to test predictions directly from your command line without opening the web UI, run[cite: 2]:
 
-Bash
+Terminal Mode
+
+Run predictions directly from the command line:
+
 python integrating_gemma.py
-(You can type descriptions in plain text, key-value pairs like rainfall_7d_mm=250, slope_deg=35, or JSON strings)[cite: 2].
 
-🎯 How to Navigate the Dashboard
-Dashboard: Get a high-level overview of historical records and system readiness.   
-PY
 
-EDA Report: Dive into exploratory data analysis graphs showing disaster types over time and feature distributions.   
-PY
+Input formats accepted: plain text descriptions, key-value pairs (rainfall_7d_mm=250, slope_deg=35), or JSON strings.
 
-Models: Review validation accuracy, precision, recall, and macro F1 scores for KNN, Random Forest, and Logistic Regression.   
-PY
+Configuration
 
-Form: Test live predictions by choosing presets, filling out sliders/numeric boxes, or describing a crisis scenario in plain text[cite: 1].
+Settings can be adjusted in integrating_gemma.py:
 
-⚠️ Hackathon Disclaimer
-This tool is built for demonstration and decision-support purposes using historical data patterns. It should not replace official emergency services or professional meteorological warnings.   
-PY
-+ 1
+GEMMA_MODEL: Set the Ollama model name.
+
+WEIGHTS: Adjust weights assigned to each model in the ensemble.
+
+EXCLUDE_COLS: Specify columns excluded from training or feature extraction.
+
+Disclaimer
+
+This project is intended for decision-support and research purposes using historical data. It does not replace official warnings from emergency management agencies.
