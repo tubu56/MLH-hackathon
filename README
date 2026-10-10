@@ -1,0 +1,99 @@
+Disaster Risk Explorer & AI Predictor
+Aarohan — Built with passion for hacktober fest🚀
+
+💡 Inspiration & The Problem
+When natural disasters strike, emergency response teams and local communities need fast, data-backed insights. However, relying on heavy cloud APIs can be slow, expensive, or prone to privacy issues.
+
+Our Solution: A lightning-fast, local-first disaster prediction platform. It combines traditional machine learning classifiers (KNN, Random Forest, Logistic Regression) with local Gemma AI (via Ollama) to predict potential disaster types (floods, cyclones, earthquakes, wildfires, etc.) and generate plain-language explanations and safety guidelines entirely offline!   
+PY
++ 1
+
+✨ What Makes It Cool (Key Features)
+Interactive Streamlit Dashboard: Explore historical data patterns, view temporal trends, and check model performance metrics visually.   
+PY
+
+Ensemble Machine Learning Core: Instead of trusting just one model, it pools predictions from K-Nearest Neighbors (KNN), Random Forest (RF), and Logistic Regression (LR) using a weighted ensemble voting system.   
+PY
++ 1
+
+Smart Gemma AI Integration:
+
+Text-to-Features: Type out a natural language description (e.g., "Heavy rain for 3 days, steep hillside..."), and Gemma extracts the technical features automatically.   
+PY
+
+AI Explanations: Streams a real-time, easy-to-understand explanation of why a disaster is predicted, complete with 3 actionable precautions.   
+PY
++ 1
+
+Dual-Mode Operation: Use the polished web UI for presentations or the CLI terminal script for quick testing.   
+PY
++ 1
+
+📂 Project Structure
+Plaintext
+├── app.py                 # Core Streamlit dashboard UI (Dashboard, EDA, Models, Forms)
+├── integrating_gemma.py   # Machine learning pipeline, ensemble logic, and Ollama/Gemma helpers
+├── streamlit_app.py       # Clean entry point to launch the Streamlit app
+├── scaler.pkl             # Feature normalization scaler
+├── Pkl_Files/             # Pre-trained model binaries (.pkl)
+├── Scores/                # Validation accuracy and macro-F1 metrics
+└── Dataset/               # Cleaned historical disaster dataset (CSV)[cite: 2, 4]
+🛠️ Tech Stack
+Frontend/UI: Streamlit   
+PY
+
+Machine Learning: Scikit-Learn (KNN, Random Forest, Logistic Regression), Joblib, Pandas, NumPy   
+PY
+
+Local LLM: Gemma (via Ollama Python client)[cite: 2]
+
+🚀 Quick Start Guide (For Judges & Evaluators)
+Follow these steps to get the project running on your local machine in under 5 minutes:
+
+1. Clone & Setup Environment
+Make sure you have Python 3.8+ installed, then install the required dependencies:
+
+Bash
+pip install streamlit pandas numpy joblib scikit-learn ollama
+2. Set Up Local LLM (Ollama)
+This project uses Ollama to run Gemma locally.
+
+Download and install Ollama.
+
+Pull the required model tag (default configured in code is gemma4:e4b, or match whatever model you have installed)[cite: 2]:
+
+Bash
+ollama pull gemma4:e4b
+Ensure Ollama is running in the background.
+
+3. Launch the Web Dashboard 🌟
+Run the following command in your project directory to open the interactive UI[cite: 3]:
+
+Bash
+streamlit run streamlit_app.py
+This will automatically launch a browser window with the multi-page dashboard.   
+PY
+
+4. Alternative: Run via Terminal Mode
+If you want to test predictions directly from your command line without opening the web UI, run[cite: 2]:
+
+Bash
+python integrating_gemma.py
+(You can type descriptions in plain text, key-value pairs like rainfall_7d_mm=250, slope_deg=35, or JSON strings)[cite: 2].
+
+🎯 How to Navigate the Dashboard
+Dashboard: Get a high-level overview of historical records and system readiness.   
+PY
+
+EDA Report: Dive into exploratory data analysis graphs showing disaster types over time and feature distributions.   
+PY
+
+Models: Review validation accuracy, precision, recall, and macro F1 scores for KNN, Random Forest, and Logistic Regression.   
+PY
+
+Form: Test live predictions by choosing presets, filling out sliders/numeric boxes, or describing a crisis scenario in plain text[cite: 1].
+
+⚠️ Hackathon Disclaimer
+This tool is built for demonstration and decision-support purposes using historical data patterns. It should not replace official emergency services or professional meteorological warnings.   
+PY
++ 1
