@@ -1,0 +1,90 @@
+Disaster Risk Explorer & AI Predictor
+
+A machine learning dashboard and local AI prediction tool for forecasting natural disaster risks (such as earthquakes, floods, cyclones, wildfires, and landslides) using an ensemble of classifiers combined with local Gemma AI integration via Ollama.
+
+Key Features
+
+Streamlit Dashboard: Explore historical data patterns, temporal trends, and model performance metrics.
+
+Ensemble Machine Learning: Combines predictions from K-Nearest Neighbors (KNN), Random Forest (RF), and Logistic Regression (LR) using a weighted voting system.
+
+Local Gemma AI Integration:
+
+Extracts feature parameters from plain-text descriptions.
+
+Generates real-time explanations and safety precautions based on predicted risks.
+
+Dual Interface: Run predictions using the web dashboard or directly from the terminal.
+
+Project Structure
+
+├── app.py                 # Streamlit UI dashboard logic
+├── integrating_gemma.py   # Core model execution, ensemble logic, and Ollama helpers
+├── streamlit_app.py       # Entry point to launch the Streamlit application
+├── scaler.pkl             # Feature normalization scaler
+├── Pkl_Files/             # Serialized trained model files
+├── Scores/                # Validation score metrics
+└── Dataset/               # Cleaned historical disaster dataset
+
+
+Tech Stack
+
+Frontend: Streamlit
+
+Machine Learning: Scikit-Learn (KNN, Random Forest, Logistic Regression), Joblib, Pandas, NumPy
+
+Local LLM: Gemma via Ollama Python client
+
+Prerequisites & Setup
+
+1. Requirements
+
+Python 3.8+
+
+Ollama (running locally)
+
+Install the Python dependencies:
+
+pip install streamlit pandas numpy joblib scikit-learn ollama
+
+
+2. Configure Ollama
+
+Install and start Ollama (https://ollama.com/).
+
+Pull the required model tag (configured as gemma4:e4b in integrating_gemma.py):
+
+ollama pull gemma4:e4b
+
+
+Running the Application
+
+Web Dashboard
+
+Launch the Streamlit web application:
+
+streamlit run streamlit_app.py
+
+
+Terminal Mode
+
+Run predictions directly from the command line:
+
+python integrating_gemma.py
+
+
+Input formats accepted: plain text descriptions, key-value pairs (rainfall_7d_mm=250, slope_deg=35), or JSON strings.
+
+Configuration
+
+Settings can be adjusted in integrating_gemma.py:
+
+GEMMA_MODEL: Set the Ollama model name.
+
+WEIGHTS: Adjust weights assigned to each model in the ensemble.
+
+EXCLUDE_COLS: Specify columns excluded from training or feature extraction.
+
+Disclaimer
+
+This project is intended for decision-support and research purposes using historical data. It does not replace official warnings from emergency management agencies.
